@@ -3,6 +3,9 @@ import os
 import argparse
 import csv
 import pandas as pd
+import numpy as np
+from PIL import Image
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -12,31 +15,12 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
-import numpy as np
-from model import UNetWithOutcome4
+from model import SOFANet
 from skimage.metrics import (
     structural_similarity as ssim_metric,
     peak_signal_noise_ratio as psnr_metric,
 )
-from PIL import Image
 
-
-class CustomNormalize(object):
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
-    def __call__(self, tensor):
-        if tensor.shape[0] == len(self.mean):
-            return transforms.functional.normalize(tensor, self.mean, self.std)
-        elif tensor.shape[0] == 1:
-            return transforms.functional.normalize(
-                tensor, [self.mean[0]], [self.std[0]]
-            )
-        else:
-            raise ValueError(
-                f"Expected tensor with 1 or 3 channels, got {tensor.shape[0]} channels."
-            )
 
 
 class ScarDiceLoss(nn.Module):
@@ -206,14 +190,11 @@ def train(args, device):
         [transforms.Resize((256, 256)), transforms.ToTensor()]
     )
 
-    # Set up 5-fold cross-validation
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
     dataset = Phase1Dataset if args.phase == 1 else Phase2Dataset
 
     for fold, (train_idx, val_idx) in enumerate(kf.split(patient_ids)):
         print(f"\nFold {fold} starting...")
-        # if fold != 0:
-        #     continue
         if os.path.exists(
             os.path.join(
                 args.out,
@@ -240,11 +221,11 @@ def train(args, device):
 
         # Model setup
         if args.phase == 1:
-            model = UNetWithOutcome4(
+            model = SOFANet(
                 out_channels=3, num_views=1, freeze_encoder=False
             )
         else:
-            model = UNetWithOutcome4(
+            model = SOFANet(
                 out_channels=3,
                 num_views=args.num_views,
                 freeze_encoder=True,
