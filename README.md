@@ -31,8 +31,8 @@ In DECAAF-II, commercial software (Merisight) was used for image segmentation, p
 ## Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/sofa-af-ablation.git
-cd sofa-af-ablation
+git clone https://github.com/anonymous/SOFA.git
+cd SOFA
 ```
 
 2. Install the required packages (see above).
